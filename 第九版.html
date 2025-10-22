@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>等量关系学习工具</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            color: #333;
+            line-height: 1.6;
+            padding: 10px;
+            min-height: 100vh;
+            touch-action: manipulation;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            width: 95vw;
+            height: 95vh;
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        header {
+            background: linear-gradient(90deg, #4b6cb7 0%, #182848 100%);
+            color: white;
+            padding: 15px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        h1 {
+            font-size: 2.2rem;
+            margin-bottom: 5px;
+        }
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        .content {
+            display: flex;
+            width: 100%;
+            height: calc(100% - 80px);
+            flex: 1;
+            padding: 0;
+            overflow: hidden;
+        }
+        .items-panel {
+            width: 35%;
+            height: 100%;
+            padding: 15px;
+            background-color: #f8f9fa;
+            overflow-y: auto;
+            border-right: 2px solid #ddd;
+        }
+        .equations-panel {
+            flex: 1;
+            height: 100%;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto; /* 改为允许垂直滚动 */
+        }
+        
+        /* 分类样式 */
+        .category {
+            margin-bottom: 20px;
+        }
+        .category-title {
+            font-size: 1.2rem;
+            color: #2c3e50;
+            margin-bottom: 12px;
+            padding-bottom: 6px;
+            border-bottom: 2px solid #3498db;
+            display: flex;
+            align-items: center;
+        }
+        .category-title i {
+            margin-right: 8px;
+            font-size: 1.1rem;
+        }
+        .items-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+        .item {
+            background: white;
+            border-radius: 10px;
+            padding: 12px;
+            text-align: center;
+            cursor: grab;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+            user-select: none;
+            touch-action: none;
+            min-height: 90px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .item:active {
+            cursor: grabbing;
+            transform: scale(0.95);
+        }
+        .item-icon {
+            font-size: 2rem;
+            margin-bottom: 6px;
+        }
+        .item-name {
+            font-size: 1rem;
+            font-weight: 500;
+            line-height: 1.2;
+        }
+        
+        /* 等式区域新样式 */
+        .equations-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-shrink: 0;
+        }
+        .equation {
+            background-color: #e8f4fc;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+            display: flex;
+            flex-direction: column;
+            height: 150px;
+        }
+        .equation-title {
+            font-size: 1.3rem;
+            color: #2980b9;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .equation-title i {
+            margin-right: 10px;
+            font-size: 1.4rem;
+        }
+        .equation-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            flex: 1;
+        }
+        .drop-zone {
+            width: 160px;
+            height: 90px;
+            border: 3px dashed #3498db;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(255, 255, 255, 0.7);
+            transition: background-color 0.3s;
+            font-size: 1.1rem;
+        }
+        .drop-zone.highlight {
+            background-color: rgba(100, 200, 255, 0.3);
+            border-color: #2980b9;
+        }
+        .operator {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #e74c3c;
+            margin: 0 12px;
+        }
+        .item-preview {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px;
+            width: 100%;
+            height: 100%;
+            justify-content: center;
+        }
+        .item-preview-icon {
+            font-size: 2rem;
+            margin-bottom: 6px;
+        }
+        .item-preview-name {
+            font-size: 1rem;
+            text-align: center;
+            font-weight: 500;
+            line-height: 1.2;
+        }
+        
+        /* 按钮和结果区域 */
+        .action-area {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            flex-shrink: 0;
+            margin-top: 20px;
+        }
+        .buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+        .btn {
+            padding: 15px 25px;
+            border: none;
+            border-radius: 40px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 160px;
+        }
+        .btn-primary {
+            background: linear-gradient(90deg, #2ecc71, #1abc9c);
+            color: white;
+        }
+        .btn-secondary {
+            background: linear-gradient(90deg, #e74c3c, #c0392b);
+            color: white;
+        }
+        .btn i {
+            margin-right: 10px;
+            font-size: 1.3rem;
+        }
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+        }
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        /* 结果等式板块 */
+        .result-equation {
+            background-color: #e8f4fc;
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 15px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+            display: flex;
+            flex-direction: column;
+            min-height: 180px;
+            flex-shrink: 0;
+        }
+        .result-equation .equation-title {
+            color: #27ae60;
+        }
+        .result-equation .drop-zone {
+            border-color: #27ae60;
+            background-color: rgba(39, 174, 96, 0.1);
+        }
+        
+        /* 推理过程 - 更小的字体，分两行显示 */
+        .reasoning {
+            margin-top: 12px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 0.9rem; /* 更小的字体 */
+            color: #555;
+            border: 1px solid #ddd;
+            line-height: 1.4;
+        }
+        .reasoning-line {
+            display: block;
+            margin-bottom: 4px;
+        }
+        .reasoning-line:last-child {
+            margin-bottom: 0;
+        }
+        
+        .feedback {
+            padding: 20px;
+            background: linear-gradient(90deg, #ffeaa7, #fab1a0);
+            border-radius: 15px;
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: 500;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            min-height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 15px;
+            flex-shrink: 0;
+        }
+        .instruction {
+            background-color: #ffeaa7;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+            text-align: center;
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 1400px) {
+            .container {
+                width: 98vw;
+                height: 98vh;
+            }
+            
+            .equation {
+                padding: 18px;
+                height: 140px;
+            }
+            
+            .drop-zone {
+                width: 140px;
+                height: 80px;
+            }
+        }
+        /* ===== 让图片图标和文字贴紧 ===== */
+        .item-icon img {
+            display: block;          /* 去掉图片默认下沉空隙 */
+            margin: 0 auto 4px;      /* 左右居中，底边只留 4px */
+        }
+        .item-icon + .item-name {
+            margin-top: 0;           /* 清掉文字自带的顶边距 */
+            line-height: 1.1;        /* 行高再压一点 */
+        }
+        
+
+        /* 统一控制放置区域中所有内容 */
+        .drop-zone .item-preview {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+        }
+
+        .drop-zone .item-preview-icon {
+            height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 4px;
+            width: 100%;
+        }
+
+        .drop-zone .item-preview-icon img {
+            max-width: 100px;
+            max-height: 45px;
+            object-fit: contain;
+            display: block;
+        }
+
+        /* 调整文字大小确保完整显示 */
+        .drop-zone .item-preview-name {
+            font-size: 0.9rem;
+            line-height: 1.1;
+            text-align: center;
+            word-break: break-all;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>等量关系学习工具</h1>
+            <p class="subtitle">通过拖放理解等量关系的传递性</p>
+        </header>
+        
+        <div class="content">
+            <div class="items-panel">
+                <div class="instruction">
+                    <i class="fas fa-info-circle"></i> 从下方拖动物品到等式中的放置区
+                </div>
+                
+                <!-- 身高分类 -->
+                <div class="category">
+                    <h3 class="category-title"><i class="fas fa-ruler-vertical"></i> 身高</h3>
+                    <div class="items-grid">
+                        <div class="item" draggable="true" data-name="啦啦的身高" >
+                            <div class="item-icon">
+                                <img src="啦啦.jpg" width="42" height="48">
+                            </div>
+                            <div class="item-name">啦啦的身高</div>
+                        </div>
+                        <div class="item" draggable="true" data-name="亮亮的身高">
+                            <div class="item-icon">
+                                <img src="亮亮.jpg" width="32" height="48">
+                            </div>
+                            <div class="item-name">亮亮的身高</div>
+                        </div>
+                        <div class="item" draggable="true" data-name="亮亮的身高">
+                            <div class="item-icon">
+                                <img src="亮亮.jpg" width="32" height="48">
+                            </div>
+                            <div class="item-name">亮亮的身高</div>
+                        </div>
+                        <div class="item" draggable="true" data-name="晓晓的身高">
+                            <div class="item-icon">
+                                <img src="晓晓.jpg" width="42" height="48">
+                            </div>
+                            <div class="item-name">晓晓的身高</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 体重分类 -->
+                <div class="category">
+                    <h3 class="category-title"><i class="fas fa-weight"></i> 体重</h3>
+                    <div class="items-grid">
+                        <div class="item" draggable="true" data-name="猪爸爸的体重">
+                            <div class="item-icon"><img src="猪爸爸.jpg" width="48" height="48"></div>
+                            <div class="item-name">猪爸爸的体重</div>
+                        </div>
+                        <div class="item" draggable="true" data-name="猪妈妈的体重">
+                            <div class="item-icon"><img src="猪妈妈.jpg" width="48" height="48"></div>
+                            <div class="item-name">猪妈妈的体重</div>
+                        </div>
+                        <div class="item" draggable="true" data-name="猪妈妈的体重">
+                            <div class="item-icon"><img src="猪妈妈.jpg" width="48" height="48"></div>
+                            <div class="item-name">猪妈妈的体重</div>
+                        </div>
+                        <div class="item" draggable="true" data-name="佩奇和乔治一共的体重">
+                            <div class="item-icon"><img src="佩奇和乔治.jpg" width="64" height="38"></div>
+                            <div class="item-name">佩奇和乔治一共的体重</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 人数分类 -->
+                <div class="category">
+                    <h3 class="category-title"><i class="fas fa-users"></i> 人数</h3>
+                    <div class="items-grid">
+                        <div class="item" draggable="true" data-name="三（1）班的人数">
+                            <div class="item-icon"><img src="三(1)班的人数.jpg" width="112" height="48"></div>
+                            <div class="item-name">三（1）班的人数</div>
+                        </div>
+                        <div class="item" draggable="true" data-name="三（3）班的人数">
+                            <div class="item-icon"><img src="三(3)班的人数.jpg" width="112" height="48"></div>
+                            <div class="item-name">三（3）班的人数</div>
+                        </div>
+                        <div class="item" draggable="true" data-name="三（6）班的人数">
+                            <div class="item-icon"><img src="三(6)班的人数.jpg" width="112" height="48"></div>
+                            <div class="item-name">三（6）班的人数</div>
+                        </div>
+                        <div class="item" draggable="true" data-name="三（14）班的人数">
+                            <div class="item-icon"><img src="三(14)班的人数.jpg" width="112" height="64"></div>
+                            <div class="item-name">三（14）班的人数</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 价格分类 -->
+                <div class="category">
+                    <h3 class="category-title"><i class="fas fa-tag"></i> 价格</h3>
+                    <div class="items-grid">
+                        <div class="item" draggable="true" data-name="1张桌子的价钱">
+                            <div class="item-icon">🪑</div>
+                            <div class="item-name">1张桌子的价钱</div>
+                        </div>
+                        <div class="item" draggable="true" data-name="2把椅子的价钱">
+                            <div class="item-icon">💺</div>
+                            <div class="item-name">2把椅子的价钱</div>
+                        </div>
+                        <div class="item" draggable="true" data-name="2把椅子的价钱">
+                            <div class="item-icon">💺</div>
+                            <div class="item-name">2把椅子的价钱</div>
+                        </div>
+                        <div class="item" draggable="true" data-name="9个书包的价钱">
+                            <div class="item-icon">🎒</div>
+                            <div class="item-name">9个书包的价钱</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="equations-panel">
+                <div class="equations-container">
+                    <!-- 第一个等式 -->
+                    <div class="equation">
+                        <h3 class="equation-title"><i class="fas fa-lightbulb"></i> 第一个等式</h3>
+                        <div class="equation-content">
+                            <div class="drop-zone" id="slot-1-left">
+                                <span class="placeholder">拖放到这里</span>
+                            </div>
+                            <div class="operator">=</div>
+                            <div class="drop-zone" id="slot-1-right">
+                                <span class="placeholder">拖放到这里</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 第二个等式 -->
+                    <div class="equation">
+                        <h3 class="equation-title"><i class="fas fa-lightbulb"></i> 第二个等式</h3>
+                        <div class="equation-content">
+                            <div class="drop-zone" id="slot-2-left">
+                                <span class="placeholder">拖放到这里</span>
+                            </div>
+                            <div class="operator">=</div>
+                            <div class="drop-zone" id="slot-2-right">
+                                <span class="placeholder">拖放到这里</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="action-area">
+                    <div class="buttons">
+                        <button class="btn btn-primary" id="check-button">
+                            <i class="fas fa-check-circle"></i> 验证
+                        </button>
+                        <button class="btn btn-secondary" id="reset-button">
+                            <i class="fas fa-redo"></i> 重新开始
+                        </button>
+                    </div>
+                    
+                    <!-- 结果等式板块 -->
+                    <div class="result-equation" id="result-equation" style="display: none;">
+                        <h3 class="equation-title"><i class="fas fa-check-circle"></i> 结果等式</h3>
+                        <div class="equation-content">
+                            <div class="drop-zone" id="slot-3-left">
+                                <span class="placeholder">将自动生成</span>
+                            </div>
+                            <div class="operator">=</div>
+                            <div class="drop-zone" id="slot-3-right">
+                                <span class="placeholder">将自动生成</span>
+                            </div>
+                        </div>
+                        <!-- 推理过程 -->
+                        <div class="reasoning" id="reasoning-text"></div>
+                    </div>
+                    
+                    <div class="feedback" id="feedback">
+                        请构建两个等式，然后点击"验证"按钮
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 获取DOM元素
+        const slot1Left = document.getElementById('slot-1-left');
+        const slot1Right = document.getElementById('slot-1-right');
+        const slot2Left = document.getElementById('slot-2-left');
+        const slot2Right = document.getElementById('slot-2-right');
+        const slot3Left = document.getElementById('slot-3-left');
+        const slot3Right = document.getElementById('slot-3-right');
+        const checkButton = document.getElementById('check-button');
+        const resetButton = document.getElementById('reset-button');
+        const feedback = document.getElementById('feedback');
+        const resultEquation = document.getElementById('result-equation');
+        const reasoningText = document.getElementById('reasoning-text');
+
+        // 初始化游戏
+        function initGame() {
+            // 清空槽位
+            resetSlots();
+            
+            // 隐藏结果等式
+            resultEquation.style.display = 'none';
+            
+            // 设置初始反馈
+            feedback.innerHTML = '请构建两个等式，然后点击"验证"按钮';
+            feedback.style.background = 'linear-gradient(90deg, #ffeaa7, #fab1a0)';
+            
+            // 重置所有项目的使用状态
+            const items = document.querySelectorAll('.item');
+            items.forEach(item => {
+                item.dataset.used = "false";
+                item.style.opacity = "1";
+                item.style.pointerEvents = "auto";
+            });
+        }
+
+        // 重置槽位
+        function resetSlots() {
+            const slots = document.querySelectorAll('.drop-zone');
+            slots.forEach(slot => {
+                if (slot.id === 'slot-3-left' || slot.id === 'slot-3-right') {
+                    slot.innerHTML = '<span class="placeholder">将自动生成</span>';
+                } else {
+                    slot.innerHTML = '<span class="placeholder">拖放到这里</span>';
+                }
+                slot.dataset.name = '';
+                slot.classList.remove('highlight');
+            });
+        }
+
+        // 根据物品名称获取图标
+        function getItemIcon(name) {
+            const icons = {
+                '猪爸爸的体重': '<img src="猪爸爸.jpg" width="32" height="32" style="display:block;margin:0 auto;">',
+                '猪妈妈的体重': '<img src="猪妈妈.jpg" width="32" height="32" style="display:block;margin:0 auto;">',
+                '佩奇和乔治一共的体重': '<img src="佩奇和乔治.jpg" width="42" height="25" style="display:block;margin:0 auto;">',
+                '啦啦的身高': '<img src="啦啦.jpg" width="32" height="36" style="display:block;margin:0 auto;">',
+                '亮亮的身高': '<img src="亮亮.jpg" width="24" height="36" style="display:block;margin:0 auto;">',
+                '晓晓的身高': '<img src="晓晓.jpg" width="32" height="36" style="display:block;margin:0 auto;">',
+                '1张桌子的价钱': '🪑',
+                '2把椅子的价钱': '💺',
+                '9个书包的价钱': '🎒',
+                '三（1）班的人数': '<img src="三(1)班的人数.jpg" width="84" height="36" style="display:block;margin:0 auto;">',
+                '三（3）班的人数': '<img src="三(3)班的人数.jpg" width="84" height="36" style="display:block;margin:0 auto;">',
+                '三（6）班的人数': '<img src="三(6)班的人数.jpg" width="84" height="36" style="display:block;margin:0 auto;">',
+                '三（14）班的人数': '<img src="三(14)班的人数.jpg" width="96" height="52" style="display:block;margin:0 auto;">'
+            };
+            
+            return icons[name] || '📊';
+        }
+
+        // 拖拽功能实现
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化游戏
+            initGame();
+            
+            // 获取所有可拖动的物品
+            const items = document.querySelectorAll('.item');
+            // 获取所有放置区域
+            const dropZones = document.querySelectorAll('.drop-zone');
+            
+            // 当前拖动的元素
+            let draggedItem = null;
+            
+            // 为每个物品添加触摸事件监听器
+            items.forEach(item => {
+                // 添加触摸事件
+                item.addEventListener('touchstart', function(e) {
+                    if (this.dataset.used === "true") return;
+                    
+                    e.preventDefault();
+                    draggedItem = this;
+                    this.style.opacity = '0.7';
+                });
+                
+                item.addEventListener('touchend', function() {
+                    this.style.opacity = '1';
+                    dropZones.forEach(zone => zone.classList.remove('highlight'));
+                });
+                
+                // 保持鼠标事件兼容性
+                item.addEventListener('dragstart', function(e) {
+                    if (this.dataset.used === "true") {
+                        e.preventDefault();
+                        return;
+                    }
+                    
+                    draggedItem = this;
+                    e.dataTransfer.setData('text/plain', this.dataset.name);
+                    setTimeout(() => this.style.opacity = '0.5', 0);
+                });
+                
+                item.addEventListener('dragend', function() {
+                    this.style.opacity = '1';
+                    dropZones.forEach(zone => zone.classList.remove('highlight'));
+                });
+            });
+            
+            // 为每个放置区域添加事件监听器
+            dropZones.forEach(zone => {
+                // 只允许前四个槽位可以拖放
+                if (zone.id === 'slot-3-left' || zone.id === 'slot-3-right') {
+                    return;
+                }
+                
+                // 触摸事件
+                zone.addEventListener('touchmove', function(e) {
+                    e.preventDefault();
+                });
+                
+                zone.addEventListener('touchstart', function() {
+                    this.classList.add('highlight');
+                });
+                
+                zone.addEventListener('touchend', function(e) {
+                    e.preventDefault();
+                    this.classList.remove('highlight');
+                    
+                    if (draggedItem && draggedItem.dataset.used !== "true") {
+                        const name = draggedItem.dataset.name;
+                        
+                        // 更新放置区域的内容
+                        this.innerHTML = `
+                            <div class="item-preview">
+                                <div class="item-preview-icon">${getItemIcon(name)}</div>
+                                <div class="item-preview-name">${name}</div>
+                            </div>
+                        `;
+                        
+                        // 存储数据到放置区域
+                        this.dataset.name = name;
+                        
+                        // 标记卡片为已使用
+                        draggedItem.dataset.used = "true";
+                        draggedItem.style.opacity = "0.5";
+                        draggedItem.style.pointerEvents = "none";
+                    }
+                });
+                
+                // 保持鼠标事件兼容性
+                zone.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    this.classList.add('highlight');
+                });
+                
+                zone.addEventListener('dragleave', function() {
+                    this.classList.remove('highlight');
+                });
+                
+                zone.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    this.classList.remove('highlight');
+                    
+                    if (draggedItem && draggedItem.dataset.used !== "true") {
+                        const name = e.dataTransfer.getData('text/plain');
+                        
+                        // 更新放置区域的内容
+                        this.innerHTML = `
+                            <div class="item-preview">
+                                <div class="item-preview-icon">${getItemIcon(name)}</div>
+                                <div class="item-preview-name">${name}</div>
+                            </div>
+                        `;
+                        
+                        // 存储数据到放置区域
+                        this.dataset.name = name;
+                        
+                        // 标记卡片为已使用
+                        draggedItem.dataset.used = "true";
+                        draggedItem.style.opacity = "0.5";
+                        draggedItem.style.pointerEvents = "none";
+                    }
+                });
+            });
+
+            // 验证等式关系
+            checkButton.addEventListener('click', function() {
+                const slot1LeftValue = slot1Left.dataset.name;
+                const slot1RightValue = slot1Right.dataset.name;
+                const slot2LeftValue = slot2Left.dataset.name;
+                const slot2RightValue = slot2Right.dataset.name;
+                
+                // 检查是否所有槽位都已填充
+                if (!slot1LeftValue || !slot1RightValue || !slot2LeftValue || !slot2RightValue) {
+                    feedback.innerHTML = '<i class="fas fa-exclamation-circle"></i> 请将卡片拖拽到所有四个框中！';
+                    feedback.style.background = 'linear-gradient(90deg, #ff7675, #d63031)';
+                    feedback.style.color = 'white';
+                    resultEquation.style.display = 'none';
+                    return;
+                }
+                
+                // 检查是否可以建立等量关系
+                let foundConnection = false;
+                let A = "", B = "", C = "";
+                let reasoningLine1 = "", reasoningLine2 = "";
+                
+                // 检查两个等式是否有共同的量（桥）
+                if (slot1RightValue === slot2LeftValue) {
+                    foundConnection = true;
+                    A = slot1LeftValue;
+                    B = slot1RightValue;
+                    C = slot2RightValue;
+                    reasoningLine1 = `因为 ${A} = ${B}，${B} = ${C}`;
+                    reasoningLine2 = `所以 ${A} = ${C}`;
+                } else if (slot1RightValue === slot2RightValue) {
+                    foundConnection = true;
+                    A = slot1LeftValue;
+                    B = slot1RightValue;
+                    C = slot2LeftValue;
+                    reasoningLine1 = `因为 ${A} = ${B}，${B} = ${C}`;
+                    reasoningLine2 = `所以 ${A} = ${C}`;
+                } else if (slot1LeftValue === slot2LeftValue) {
+                    foundConnection = true;
+                    A = slot1RightValue;
+                    B = slot1LeftValue;
+                    C = slot2RightValue;
+                    reasoningLine1 = `因为 ${A} = ${B}，${B} = ${C}`;
+                    reasoningLine2 = `所以 ${A} = ${C}`;
+                } else if (slot1LeftValue === slot2RightValue) {
+                    foundConnection = true;
+                    A = slot1RightValue;
+                    B = slot1LeftValue;
+                    C = slot2LeftValue;
+                    reasoningLine1 = `因为 ${A} = ${B}，${B} = ${C}`;
+                    reasoningLine2 = `所以 ${A} = ${C}`;
+                }
+                
+                // 显示结果
+                if (foundConnection) {
+                    feedback.innerHTML = `<i class="fas fa-check-circle"></i> 太棒了！等量关系推导成功`;
+                    feedback.style.background = 'linear-gradient(90deg, #a8e6cf, #2d6a4f)';
+                    feedback.style.color = 'white';
+                    
+                    // 显示并填充结果等式
+                    resultEquation.style.display = 'flex';
+                    slot3Left.innerHTML = `
+                        <div class="item-preview">
+                            <div class="item-preview-icon">${getItemIcon(A)}</div>
+                            <div class="item-preview-name">${A}</div>
+                        </div>
+                    `;
+                    slot3Left.dataset.name = A;
+                    
+                    slot3Right.innerHTML = `
+                        <div class="item-preview">
+                            <div class="item-preview-icon">${getItemIcon(C)}</div>
+                            <div class="item-preview-name">${C}</div>
+                        </div>
+                    `;
+                    slot3Right.dataset.name = C;
+                    
+                    // 显示推理过程（分两行）
+                    reasoningText.innerHTML = `
+                        <span class="reasoning-line">${reasoningLine1}</span>
+                        <span class="reasoning-line">${reasoningLine2}</span>
+                    `;
+                    
+                    // 滚动到结果等式位置
+                    setTimeout(() => {
+                        resultEquation.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }, 100);
+                } else {
+                    feedback.innerHTML = '<i class="fas fa-exclamation-circle"></i> 这两个等式无法通过等量传递建立关系，再试试看！';
+                    feedback.style.background = 'linear-gradient(90deg, #ff7675, #d63031)';
+                    feedback.style.color = 'white';
+                    resultEquation.style.display = 'none';
+                }
+            });
+
+            // 重置按钮事件
+            resetButton.addEventListener('click', initGame);
+            
+            // 防止滚动和缩放
+            document.addEventListener('touchmove', function(e) {
+                if (e.touches.length > 1) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
+            
+            let lastTouchEnd = 0;
+            document.addEventListener('touchend', function(e) {
+                const now = (new Date()).getTime();
+                if (now - lastTouchEnd <= 300) {
+                    e.preventDefault();
+                }
+                lastTouchEnd = now;
+            }, false);
+        });
+    </script>
+</body>
+</html>
